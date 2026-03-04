@@ -1,0 +1,124 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: SKCT-comfort Backend API
+
+Parameters:
+  AdminPassword:
+    Type: String
+    Default: 'skct-admin-2026'
+    NoEcho: true
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Timeout: 30
+    MemorySize: 256
+    Environment:
+      Variables:
+        TABLE_NAME: !Ref SKCTTable
+        ADMIN_PASSWORD: !Ref AdminPassword
+  Api:
+    Cors:
+      AllowMethods: "'GET,POST,OPTIONS'"
+      AllowHeaders: "'Content-Type,X-User-Id'"
+      AllowOrigin: "'*'"
+
+Resources:
+  SKCTTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: skct-comfort
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+        - AttributeName: GSI1PK
+          AttributeType: S
+        - AttributeName: GSI1SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: GSI1
+          KeySchema:
+            - AttributeName: GSI1PK
+              KeyType: HASH
+            - AttributeName: GSI1SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.handler
+      CodeUri: .
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SKCTTable
+      Events:
+        StatsPost:
+          Type: Api
+          Properties:
+            Path: /api/stats
+            Method: post
+        StatsGet:
+          Type: Api
+          Properties:
+            Path: /api/stats
+            Method: get
+        WrongNotesPost:
+          Type: Api
+          Properties:
+            Path: /api/wrong-notes
+            Method: post
+        WrongNotesGet:
+          Type: Api
+          Properties:
+            Path: /api/wrong-notes
+            Method: get
+        SessionsPost:
+          Type: Api
+          Properties:
+            Path: /api/sessions
+            Method: post
+        FeedbackPost:
+          Type: Api
+          Properties:
+            Path: /api/feedback
+            Method: post
+        FeedbackGet:
+          Type: Api
+          Properties:
+            Path: /api/feedback
+            Method: get
+        FeedbackReply:
+          Type: Api
+          Properties:
+            Path: /api/feedback/reply
+            Method: post
+        FeedbackResolve:
+          Type: Api
+          Properties:
+            Path: /api/feedback/resolve
+            Method: post
+        AdminUsers:
+          Type: Api
+          Properties:
+            Path: /api/admin/users
+            Method: get
+        AdminUsage:
+          Type: Api
+          Properties:
+            Path: /api/admin/usage
+            Method: get
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway endpoint URL
+    Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/api'

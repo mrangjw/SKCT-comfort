@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="80" fill="#dc2626"/>
+  <text x="256" y="200" text-anchor="middle" fill="#facc15" font-family="Arial,sans-serif" font-weight="bold" font-size="100">SKCT</text>
+  <text x="256" y="340" text-anchor="middle" fill="#ffffff" font-family="Arial,sans-serif" font-size="56">comfort</text>
+</svg>
