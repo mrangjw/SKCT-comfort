@@ -73,23 +73,6 @@ export default function Home({ sections, stats, wrongNotesCount, onSelectSection
         </div>
       </button>
 
-      {/* Answer key grading */}
-      <button
-        onClick={() => onNavigate('answer-grading' as Page)}
-        className="w-full bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 text-left active:bg-amber-500/20 transition-colors mb-3"
-      >
-        <div className="flex items-center gap-3">
-          <div className="text-2xl w-10 h-10 flex items-center justify-center rounded-xl bg-amber-500/20">
-            ✏️
-          </div>
-          <div className="flex-1">
-            <span className="font-medium">정답 채점</span>
-            <p className="text-xs text-text-dim mt-0.5">실전모의고사 답안 입력 → 즉시 채점 (2026 에듀윌)</p>
-          </div>
-          <span className="text-text-dim">&rsaquo;</span>
-        </div>
-      </button>
-
       {/* All sections random quiz */}
       <button
         onClick={onStartAllQuiz}
