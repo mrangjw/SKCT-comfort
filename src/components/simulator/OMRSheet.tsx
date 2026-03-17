@@ -2,6 +2,8 @@ import { useState, useCallback } from 'react';
 import { ANSWER_KEYS, SECTION_LABELS, BOOK_SOURCE } from '../../data/answer-keys';
 import type { Section } from '../../types';
 
+const SEC_ORDER: Section[] = ['language', 'data-analysis', 'math', 'logic', 'sequence'];
+
 interface Props {
   questionCount: number;
 }
@@ -14,7 +16,7 @@ export default function OMRSheet({ questionCount }: Props) {
   const [gradeInput, setGradeInput] = useState('');
   const [gradeMode, setGradeMode] = useState<'manual' | 'eduwill'>('eduwill');
   const [selectedTest, setSelectedTest] = useState(0);
-  const [selectedSection, setSelectedSection] = useState<Section>('language');
+  const [selectedSection, setSelectedSection] = useState<Section | 'all'>('all');
 
   const selectAnswer = useCallback((q: number, choice: number) => {
     if (graded) return;
@@ -40,8 +42,15 @@ export default function OMRSheet({ questionCount }: Props) {
 
     if (gradeMode === 'eduwill') {
       const test = ANSWER_KEYS[selectedTest];
-      const keys = test.sections[selectedSection];
-      if (keys) parsed = keys;
+      if (selectedSection === 'all') {
+        SEC_ORDER.forEach(sec => {
+          const keys = test.sections[sec];
+          if (keys) parsed.push(...keys);
+        });
+      } else {
+        const keys = test.sections[selectedSection];
+        if (keys) parsed = keys;
+      }
     } else {
       parsed = gradeInput
         .split(/[,\s]+/)
@@ -217,6 +226,16 @@ export default function OMRSheet({ questionCount }: Props) {
                 </div>
                 {/* Section select */}
                 <div className="flex flex-wrap gap-2 mb-4">
+                  <button
+                    onClick={() => setSelectedSection('all')}
+                    className={`py-1.5 px-3 rounded-lg text-sm font-medium transition-colors ${
+                      selectedSection === 'all'
+                        ? 'bg-emerald-500 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    전체 (100)
+                  </button>
                   {(Object.keys(ANSWER_KEYS[selectedTest].sections) as Section[]).map(sec => (
                     <button
                       key={sec}
