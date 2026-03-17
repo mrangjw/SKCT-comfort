@@ -3,6 +3,7 @@ import type { Section } from '../types';
 import { ANSWER_KEYS, SECTION_LABELS, BOOK_SOURCE } from '../data/answer-keys';
 
 const SEC_ORDER: Section[] = ['language', 'data-analysis', 'math', 'logic', 'sequence'];
+const NUM_CIRCLE = ['', '①', '②', '③', '④', '⑤'] as const;
 
 interface Props {
   onBack: () => void;
@@ -230,6 +231,9 @@ export default function AnswerGrading({ onBack }: Props) {
             <div className={`text-lg font-medium ${gradeColor}`}>{grade}</div>
             <div className="text-sm text-text-dim mt-2">
               {result.score}/{result.total} 정답
+              {result.total - result.score > 0 && (
+                <span className="text-wrong"> · {result.total - result.score}문제 오답</span>
+              )}
             </div>
           </div>
 
@@ -258,71 +262,185 @@ export default function AnswerGrading({ onBack }: Props) {
             </div>
           )}
 
-          {/* 문항별 결과 */}
-          {result.sectionResults ? (
-            // 전체: 영역별로 나눠서 표시
-            result.sectionResults.map(sr => (
-              <div key={sr.section} className="bg-bg-card rounded-2xl p-4 mb-3">
-                <h3 className="text-sm font-medium mb-2">{sr.label}</h3>
-                <div className="grid grid-cols-5 gap-1.5">
-                  {sr.correctAnswers.map((correct, i) => {
-                    const user = sr.userAnswers[i];
-                    const isCorrect = user === correct;
-                    const notAnswered = user === undefined;
-                    return (
-                      <div
-                        key={i}
-                        className={`rounded-lg p-1.5 text-center text-xs ${
-                          notAnswered ? 'bg-bg-hover text-text-dim'
-                            : isCorrect ? 'bg-correct/20 text-correct'
-                            : 'bg-wrong/20 text-wrong'
-                        }`}
-                      >
-                        <div className="font-bold text-[10px] opacity-60">Q{i + 1}</div>
-                        {notAnswered ? '-' : isCorrect ? (
-                          <span className="font-bold">{correct}</span>
-                        ) : (
-                          <span><span className="line-through opacity-60">{user}</span> <span className="font-bold">{correct}</span></span>
-                        )}
+          {/* 틀린 문제 상세 */}
+          {(() => {
+            // 틀린 문제 목록 구성
+            type WrongItem = { qNum: number; section: string; userAns: number; correctAns: number };
+            const wrongItems: WrongItem[] = [];
+
+            if (result.sectionResults) {
+              let globalOffset = 0;
+              result.sectionResults.forEach(sr => {
+                sr.correctAnswers.forEach((correct, i) => {
+                  const user = sr.userAnswers[i];
+                  if (user !== undefined && user !== correct) {
+                    wrongItems.push({
+                      qNum: globalOffset + i + 1,
+                      section: sr.label,
+                      userAns: user,
+                      correctAns: correct,
+                    });
+                  }
+                });
+                globalOffset += sr.total;
+              });
+            } else {
+              const secLabel = SECTION_LABELS[sectionId as Section] || '';
+              result.correctAnswers.forEach((correct, i) => {
+                const user = result.userAnswers[i];
+                if (user !== undefined && user !== correct) {
+                  wrongItems.push({
+                    qNum: i + 1,
+                    section: secLabel,
+                    userAns: user,
+                    correctAns: correct,
+                  });
+                }
+              });
+            }
+
+            if (wrongItems.length === 0) {
+              return (
+                <div className="bg-correct/10 border border-correct/30 rounded-2xl p-5 mb-4 text-center">
+                  <div className="text-2xl mb-2">🎉</div>
+                  <div className="text-correct font-bold">전문항 정답!</div>
+                  <div className="text-sm text-text-dim mt-1">
+                    {test.testName}를 완벽하게 풀었습니다
+                  </div>
+                </div>
+              );
+            }
+
+            // 영역별로 그룹핑
+            const grouped: Record<string, WrongItem[]> = {};
+            wrongItems.forEach(item => {
+              if (!grouped[item.section]) grouped[item.section] = [];
+              grouped[item.section].push(item);
+            });
+
+            return (
+              <div className="bg-bg-card rounded-2xl p-4 mb-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-bold">
+                    틀린 문제 상세 <span className="text-wrong">({wrongItems.length}문제)</span>
+                  </h3>
+                  <span className="text-[10px] text-text-dim bg-bg-hover px-2 py-0.5 rounded-full">
+                    {test.testName}
+                  </span>
+                </div>
+
+                <div className="space-y-4">
+                  {Object.entries(grouped).map(([secLabel, items]) => (
+                    <div key={secLabel}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs font-medium text-text-dim bg-bg-hover px-2 py-0.5 rounded-lg">
+                          {secLabel}
+                        </span>
+                        <span className="text-[10px] text-wrong">{items.length}문제 오답</span>
                       </div>
-                    );
-                  })}
+                      <div className="space-y-1.5">
+                        {items.map(item => (
+                          <div
+                            key={item.qNum}
+                            className="flex items-center gap-3 bg-wrong/5 border border-wrong/10 rounded-xl px-3 py-2.5"
+                          >
+                            <div className="w-10 h-10 rounded-lg bg-wrong/15 flex items-center justify-center flex-shrink-0">
+                              <span className="text-wrong font-bold text-sm">{item.qNum}</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs text-text-dim mb-0.5">
+                                {test.testName} · {secLabel} · {item.qNum}번
+                              </div>
+                              <div className="flex items-center gap-2 text-sm">
+                                <span className="text-wrong">
+                                  내 답: <span className="font-bold">{NUM_CIRCLE[item.userAns]}</span>
+                                </span>
+                                <span className="text-text-dim">→</span>
+                                <span className="text-correct">
+                                  정답: <span className="font-bold">{NUM_CIRCLE[item.correctAns]}</span>
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            ))
-          ) : (
-            // 단일 영역
-            <div className="bg-bg-card rounded-2xl p-4 mb-4">
-              <h3 className="text-sm font-medium mb-3">문항별 결과</h3>
-              <div className="grid grid-cols-5 gap-2">
-                {result.correctAnswers.map((correct, i) => {
-                  const user = result.userAnswers[i];
-                  const isCorrect = user === correct;
-                  const notAnswered = user === undefined;
-                  return (
-                    <div
-                      key={i}
-                      className={`rounded-xl p-2 text-center text-xs ${
-                        notAnswered ? 'bg-bg-hover text-text-dim'
-                          : isCorrect ? 'bg-correct/20 text-correct'
-                          : 'bg-wrong/20 text-wrong'
-                      }`}
-                    >
-                      <div className="font-bold text-[10px] opacity-60 mb-0.5">Q{i + 1}</div>
-                      {notAnswered ? '-' : isCorrect ? (
-                        <div className="font-bold">{correct}</div>
-                      ) : (
-                        <div>
-                          <span className="line-through opacity-60">{user}</span>
-                          <span className="font-bold ml-1">{correct}</span>
-                        </div>
-                      )}
+            );
+          })()}
+
+          {/* 문항별 결과 그리드 */}
+          <details className="mb-4">
+            <summary className="bg-bg-card rounded-2xl px-4 py-3 text-sm font-medium cursor-pointer select-none">
+              문항별 전체 보기 (정답/오답 그리드)
+            </summary>
+            <div className="mt-2">
+              {result.sectionResults ? (
+                result.sectionResults.map(sr => (
+                  <div key={sr.section} className="bg-bg-card rounded-2xl p-4 mb-3">
+                    <h3 className="text-sm font-medium mb-2">{sr.label}</h3>
+                    <div className="grid grid-cols-5 gap-1.5">
+                      {sr.correctAnswers.map((correct, i) => {
+                        const user = sr.userAnswers[i];
+                        const isCorrect = user === correct;
+                        const notAnswered = user === undefined;
+                        return (
+                          <div
+                            key={i}
+                            className={`rounded-lg p-1.5 text-center text-xs ${
+                              notAnswered ? 'bg-bg-hover text-text-dim'
+                                : isCorrect ? 'bg-correct/20 text-correct'
+                                : 'bg-wrong/20 text-wrong'
+                            }`}
+                          >
+                            <div className="font-bold text-[10px] opacity-60">Q{i + 1}</div>
+                            {notAnswered ? '-' : isCorrect ? (
+                              <span className="font-bold">{correct}</span>
+                            ) : (
+                              <span><span className="line-through opacity-60">{user}</span> <span className="font-bold">{correct}</span></span>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                ))
+              ) : (
+                <div className="bg-bg-card rounded-2xl p-4">
+                  <h3 className="text-sm font-medium mb-3">문항별 결과</h3>
+                  <div className="grid grid-cols-5 gap-2">
+                    {result.correctAnswers.map((correct, i) => {
+                      const user = result.userAnswers[i];
+                      const isCorrect = user === correct;
+                      const notAnswered = user === undefined;
+                      return (
+                        <div
+                          key={i}
+                          className={`rounded-xl p-2 text-center text-xs ${
+                            notAnswered ? 'bg-bg-hover text-text-dim'
+                              : isCorrect ? 'bg-correct/20 text-correct'
+                              : 'bg-wrong/20 text-wrong'
+                          }`}
+                        >
+                          <div className="font-bold text-[10px] opacity-60 mb-0.5">Q{i + 1}</div>
+                          {notAnswered ? '-' : isCorrect ? (
+                            <div className="font-bold">{correct}</div>
+                          ) : (
+                            <div>
+                              <span className="line-through opacity-60">{user}</span>
+                              <span className="font-bold ml-1">{correct}</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+          </details>
 
           {/* 버튼 */}
           <div className="flex gap-3">

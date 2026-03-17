@@ -9,7 +9,7 @@ let _active = 0;
 const _waiters: (() => void)[] = [];
 function acquireSlot(): Promise<void> {
   if (_active < MAX_CONCURRENT) { _active++; return Promise.resolve(); }
-  return new Promise(r => _waiters.push(r)).then(() => { _active++; });
+  return new Promise<void>(r => _waiters.push(r)).then(() => { _active++; });
 }
 function releaseSlot() {
   _active--;
