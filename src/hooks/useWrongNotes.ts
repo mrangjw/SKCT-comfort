@@ -24,10 +24,16 @@ function save(notes: WrongNote[]) {
 }
 
 export function useWrongNotes() {
-  const [notes, setNotes] = useState<WrongNote[]>(load);
+  const [notes, setNotesState] = useState<WrongNote[]>(load);
+
+  const setNotes = useCallback((data: unknown[]) => {
+    const parsed = data as WrongNote[];
+    setNotesState(parsed);
+    save(parsed);
+  }, []);
 
   const addNote = useCallback((questionId: string, wrongAnswer: number) => {
-    setNotes(prev => {
+    setNotesState(prev => {
       const exists = prev.find(n => n.questionId === questionId);
       if (exists) return prev;
       const next = [...prev, { questionId, wrongAnswer, date: new Date().toISOString().slice(0, 10), memo: '', reviewed: false }];
@@ -37,7 +43,7 @@ export function useWrongNotes() {
   }, []);
 
   const updateMemo = useCallback((questionId: string, memo: string) => {
-    setNotes(prev => {
+    setNotesState(prev => {
       const next = prev.map(n => n.questionId === questionId ? { ...n, memo } : n);
       save(next);
       return next;
@@ -45,7 +51,7 @@ export function useWrongNotes() {
   }, []);
 
   const markReviewed = useCallback((questionId: string) => {
-    setNotes(prev => {
+    setNotesState(prev => {
       const next = prev.map(n => n.questionId === questionId ? { ...n, reviewed: true } : n);
       save(next);
       return next;
@@ -53,7 +59,7 @@ export function useWrongNotes() {
   }, []);
 
   const removeNote = useCallback((questionId: string) => {
-    setNotes(prev => {
+    setNotesState(prev => {
       const next = prev.filter(n => n.questionId !== questionId);
       save(next);
       return next;
@@ -70,8 +76,8 @@ export function useWrongNotes() {
 
   const clearAll = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
-    setNotes([]);
+    setNotesState([]);
   }, []);
 
-  return { notes, addNote, updateMemo, markReviewed, removeNote, getWrongQuestions, clearAll };
+  return { notes, setNotes, addNote, updateMemo, markReviewed, removeNote, getWrongQuestions, clearAll };
 }

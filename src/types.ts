@@ -59,4 +59,4 @@ export interface SectionStats {
   history: { date: string; correct: number; total: number }[];
 }
 
-export type Page = 'home' | 'section' | 'quiz' | 'result' | 'stats' | 'settings' | 'pdf-generator';
+export type Page = 'home' | 'section' | 'quiz' | 'result' | 'stats' | 'settings' | 'pdf-generator' | 'ai-questions' | 'exam-simulator' | 'study-tips' | 'answer-grading';

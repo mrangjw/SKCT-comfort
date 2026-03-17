@@ -43,11 +43,13 @@ const SYSTEM_PROMPT = `당신은 SKCT(SK 종합역량검사) 인지검사 문제
     "passage": "지문 (필요시)",
     "question": "문제 텍스트",
     "options": ["선택지1", "선택지2", "선택지3", "선택지4", "선택지5"],
-    "answer": 0,
+    "answer": "정답 선택지 텍스트 (options에 있는 값과 정확히 동일하게)",
     "explanation": "해설",
     "difficulty": 1
   }
 ]
+
+중요: answer는 인덱스 번호가 아니라, options 배열에 있는 정답 선택지의 텍스트를 그대로 적으세요.
 
 영역별 특징:
 - language(언어이해): 지문 기반 독해, 중심내용/세부내용/구조/비판
@@ -132,6 +134,105 @@ export async function generateQuestions(config: AIConfig, text: string, section?
   }
 
   // Parse JSON from response
+  const jsonMatch = response.match(/\[[\s\S]*\]/);
+  if (!jsonMatch) throw new Error('AI 응답에서 JSON을 찾을 수 없습니다');
+  return JSON.parse(jsonMatch[0]);
+}
+
+const RAG_SYSTEM_PROMPT = `당신은 SKCT(SK 종합역량검사) 인지검사 문제 출제 전문가입니다.
+아래 제공된 교재 내용을 참고하여 SKCT 스타일의 문제를 생성합니다.
+
+중요: 교재의 내용, 유형, 스타일을 참고하되, 단순 복사가 아닌 새로운 문제를 만들어주세요.
+교재에 나온 개념이나 주제를 활용하여 유사한 난이도와 형식의 문제를 생성하세요.
+
+문제는 반드시 아래 JSON 배열 형식으로만 응답하세요. 다른 텍스트를 포함하지 마세요:
+[
+  {
+    "section": "language|data-analysis|math|logic|sequence",
+    "type": "유형명",
+    "passage": "지문 (필요시)",
+    "question": "문제 텍스트",
+    "options": ["선택지1", "선택지2", "선택지3", "선택지4", "선택지5"],
+    "answer": "정답 선택지 텍스트 (options에 있는 값과 정확히 동일하게)",
+    "explanation": "해설",
+    "difficulty": 1
+  }
+]
+
+중요: answer는 인덱스 번호가 아니라, options 배열에 있는 정답 선택지의 텍스트를 그대로 적으세요.
+
+영역별 특징:
+- language(언어이해): 지문 기반 독해, 중심내용/세부내용/구조/비판
+- data-analysis(자료해석): 표/그래프 데이터 해석, 계산, 추론
+- math(창의수리): 수학 응용문제 (속력, 농도, 일의 양, 경우의 수 등)
+- logic(언어추리): 명제, 조건 추리 (순서/위치/참거짓)
+- sequence(수열추리): 수열 규칙 파악`;
+
+async function callLLM(config: AIConfig, systemPrompt: string, userMessage: string): Promise<string> {
+  switch (config.provider) {
+    case 'openai': {
+      const res = await fetch(config.apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${config.apiKey}` },
+        body: JSON.stringify({
+          model: config.model,
+          messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userMessage }],
+          temperature: 0.7, max_tokens: 4096,
+        }),
+      });
+      const data = await res.json();
+      return data.choices?.[0]?.message?.content || '';
+    }
+    case 'claude': {
+      const res = await fetch(config.apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json', 'x-api-key': config.apiKey,
+          'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model: config.model, max_tokens: 4096, system: systemPrompt,
+          messages: [{ role: 'user', content: userMessage }],
+        }),
+      });
+      const data = await res.json();
+      return data.content?.[0]?.text || '';
+    }
+    default: {
+      const res = await fetch(config.apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${config.apiKey}` },
+        body: JSON.stringify({
+          model: config.model,
+          messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userMessage }],
+          temperature: 0.7, max_tokens: 4096,
+        }),
+      });
+      const data = await res.json();
+      return data.choices?.[0]?.message?.content || data.content?.[0]?.text || data.response || '';
+    }
+  }
+}
+
+export interface RAGChunk {
+  text: string;
+  page?: number;
+  section?: string;
+  score: number;
+}
+
+export async function generateFromRAG(
+  config: AIConfig,
+  chunks: RAGChunk[],
+  topic: string,
+  section?: string,
+  count: number = 5,
+): Promise<unknown[]> {
+  const context = chunks.map((c, i) => `[참고 ${i + 1} (p.${c.page || '?'})]:\n${c.text}`).join('\n\n---\n\n');
+  const sectionHint = section ? `\n영역: ${section}에 해당하는 문제만 생성하세요.` : '';
+  const userMessage = `주제/키워드: "${topic}"${sectionHint}\n\n아래 교재 내용을 참고하여 SKCT 스타일 문제를 ${count}개 생성하세요.\n\n===교재 내용===\n${context.slice(0, 12000)}`;
+
+  const response = await callLLM(config, RAG_SYSTEM_PROMPT, userMessage);
   const jsonMatch = response.match(/\[[\s\S]*\]/);
   if (!jsonMatch) throw new Error('AI 응답에서 JSON을 찾을 수 없습니다');
   return JSON.parse(jsonMatch[0]);

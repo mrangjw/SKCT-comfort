@@ -88,7 +88,7 @@ export default function Feedback({ onBack, isAdmin }: Props) {
         <h2 className="text-xl font-bold">{isAdmin ? '문의 관리' : '문의하기'}</h2>
       </div>
 
-      {/* Submit form (non-admin) */}
+      {/* Submit form (non-admin only) */}
       {!isAdmin && (
         <div className="bg-bg-card rounded-2xl p-4 mb-6">
           <h3 className="text-sm font-medium mb-3">새 문의</h3>
@@ -128,20 +128,25 @@ export default function Feedback({ onBack, isAdmin }: Props) {
       )}
 
       {/* List */}
+      {!isAdmin && <h3 className="text-sm font-medium mb-2">내 문의 내역</h3>}
       <div className="space-y-2">
         {loading ? (
           <p className="text-center text-text-dim py-8">불러오는 중...</p>
         ) : items.length === 0 ? (
-          <p className="text-center text-text-dim py-8">문의 내역이 없습니다</p>
+          <p className="text-center text-text-dim py-8">
+            {isAdmin ? '접수된 문의가 없습니다' : '문의 내역이 없습니다'}
+          </p>
         ) : items.map(item => (
           <div key={item.id} className="bg-bg-card rounded-xl p-3">
             <div className="flex items-center gap-2 mb-2">
               <span className={`text-[10px] px-1.5 py-0.5 rounded ${typeColors[item.type]}`}>{typeLabels[item.type]}</span>
-              <span className={`text-[10px] px-1.5 py-0.5 rounded ${item.status === 'open' ? 'bg-warning/20 text-warning' : 'bg-correct/20 text-correct'}`}>
-                {item.status === 'open' ? '대기중' : '해결됨'}
-              </span>
+              {item.adminReply ? (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-correct/20 text-correct">답변 완료</span>
+              ) : (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-warning/20 text-warning">대기중</span>
+              )}
               {isAdmin && <span className="text-xs text-text-dim ml-auto">{item.nickname || item.userId.slice(0, 8)}</span>}
-              <span className="text-xs text-text-dim">{item.createdAt.slice(0, 10)}</span>
+              <span className={`text-xs text-text-dim ${!isAdmin ? 'ml-auto' : ''}`}>{item.createdAt.slice(0, 10)}</span>
             </div>
             {item.questionId && <p className="text-xs text-text-dim mb-1">문제: {item.questionId}</p>}
             <p className="text-sm">{item.message}</p>
@@ -171,7 +176,9 @@ export default function Feedback({ onBack, isAdmin }: Props) {
                   </div>
                 ) : (
                   <>
-                    <button onClick={() => { setReplyingTo(item.id); setReplyText(item.adminReply || ''); }} className="px-2 py-1 bg-bg-hover rounded text-xs">답변</button>
+                    <button onClick={() => { setReplyingTo(item.id); setReplyText(item.adminReply || ''); }} className="px-2 py-1 bg-bg-hover rounded text-xs">
+                      {item.adminReply ? '답변 수정' : '답변'}
+                    </button>
                     {item.status === 'open' && (
                       <button onClick={() => handleResolve(item.id)} className="px-2 py-1 bg-correct/20 text-correct rounded text-xs">해결</button>
                     )}

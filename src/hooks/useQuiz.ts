@@ -14,6 +14,7 @@ export function useQuiz() {
 
   const start = useCallback((allQuestions: Question[], config: QuizConfig) => {
     let qs = allQuestions.filter(q => q.section === config.section);
+    if (qs.length === 0) qs = [...allQuestions]; // 전체 랜덤: 섹션 필터 스킵
     if (config.type) qs = qs.filter(q => q.type === config.type);
     qs = shuffle(qs);
     if (config.mode === 'mock') qs = qs.slice(0, 20);

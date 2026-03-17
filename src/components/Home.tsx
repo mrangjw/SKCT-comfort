@@ -6,9 +6,10 @@ interface Props {
   wrongNotesCount: number;
   onSelectSection: (section: SectionInfo) => void;
   onNavigate: (page: Page) => void;
+  onStartAllQuiz: () => void;
 }
 
-export default function Home({ sections, stats, wrongNotesCount, onSelectSection, onNavigate }: Props) {
+export default function Home({ sections, stats, wrongNotesCount, onSelectSection, onNavigate, onStartAllQuiz }: Props) {
   const totalCorrect = Object.values(stats).reduce((s, v) => s + v.correct, 0);
   const totalTotal = Object.values(stats).reduce((s, v) => s + v.total, 0);
   const overallPct = totalTotal > 0 ? Math.round((totalCorrect / totalTotal) * 100) : 0;
@@ -37,6 +38,74 @@ export default function Home({ sections, stats, wrongNotesCount, onSelectSection
           </div>
         </div>
       )}
+
+      {/* Exam simulator */}
+      <button
+        onClick={() => onNavigate('exam-simulator' as Page)}
+        className="w-full bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-4 text-left active:bg-emerald-500/20 transition-colors mb-3"
+      >
+        <div className="flex items-center gap-3">
+          <div className="text-2xl w-10 h-10 flex items-center justify-center rounded-xl bg-emerald-500/20">
+            🖥️
+          </div>
+          <div className="flex-1">
+            <span className="font-medium">시험 시뮬레이션</span>
+            <p className="text-xs text-text-dim mt-0.5">PDF + OMR + 타이머 + 계산기 + 메모 (PC 전용)</p>
+          </div>
+          <span className="text-text-dim">&rsaquo;</span>
+        </div>
+      </button>
+
+      {/* Study tips */}
+      <button
+        onClick={() => onNavigate('study-tips' as Page)}
+        className="w-full bg-accent/10 border border-accent/30 rounded-2xl p-4 text-left active:bg-accent/20 transition-colors mb-3"
+      >
+        <div className="flex items-center gap-3">
+          <div className="text-2xl w-10 h-10 flex items-center justify-center rounded-xl bg-accent/20">
+            💡
+          </div>
+          <div className="flex-1">
+            <span className="font-medium">공부 전략 & 꿀팁</span>
+            <p className="text-xs text-text-dim mt-0.5">영역별 전략, 시험 환경, 멘탈 관리</p>
+          </div>
+          <span className="text-text-dim">&rsaquo;</span>
+        </div>
+      </button>
+
+      {/* Answer key grading */}
+      <button
+        onClick={() => onNavigate('answer-grading' as Page)}
+        className="w-full bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 text-left active:bg-amber-500/20 transition-colors mb-3"
+      >
+        <div className="flex items-center gap-3">
+          <div className="text-2xl w-10 h-10 flex items-center justify-center rounded-xl bg-amber-500/20">
+            ✏️
+          </div>
+          <div className="flex-1">
+            <span className="font-medium">정답 채점</span>
+            <p className="text-xs text-text-dim mt-0.5">실전모의고사 답안 입력 → 즉시 채점 (2026 에듀윌)</p>
+          </div>
+          <span className="text-text-dim">&rsaquo;</span>
+        </div>
+      </button>
+
+      {/* All sections random quiz */}
+      <button
+        onClick={onStartAllQuiz}
+        className="w-full bg-primary-light/10 border border-primary-light/30 rounded-2xl p-4 text-left active:bg-primary-light/20 transition-colors mb-4"
+      >
+        <div className="flex items-center gap-3">
+          <div className="text-2xl w-10 h-10 flex items-center justify-center rounded-xl bg-primary-light/20">
+            🔀
+          </div>
+          <div className="flex-1">
+            <span className="font-medium">전체 랜덤</span>
+            <p className="text-xs text-text-dim mt-0.5">5개 영역 300문항 섞어서 풀기</p>
+          </div>
+          <span className="text-text-dim">&rsaquo;</span>
+        </div>
+      </button>
 
       {/* Section cards */}
       <div className="space-y-3 mb-6">
@@ -97,6 +166,10 @@ export default function Home({ sections, stats, wrongNotesCount, onSelectSection
           <button onClick={() => onNavigate('pdf-generator')} className="flex flex-col items-center gap-0.5 px-3 py-1 text-text-dim">
             <span className="text-lg">🤖</span>
             <span className="text-[10px]">AI생성</span>
+          </button>
+          <button onClick={() => onNavigate('ai-questions')} className="flex flex-col items-center gap-0.5 px-3 py-1 text-text-dim">
+            <span className="text-lg">📚</span>
+            <span className="text-[10px]">AI문제</span>
           </button>
           <button onClick={() => onNavigate('feedback' as Page)} className="flex flex-col items-center gap-0.5 px-3 py-1 text-text-dim">
             <span className="text-lg">💬</span>

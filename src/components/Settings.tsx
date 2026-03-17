@@ -9,12 +9,15 @@ interface Props {
   onNavigateAdmin: () => void;
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
+  onLogout: () => void;
+  userName: string;
+  userClassName: string;
+  onSaveSettings: () => void;
 }
 
-export default function Settings({ onBack, onClearStats, onClearWrongNotes, onNavigateAdmin, theme, onToggleTheme }: Props) {
+export default function Settings({ onBack, onClearStats, onClearWrongNotes, onNavigateAdmin, theme, onToggleTheme, onLogout, userName, userClassName, onSaveSettings }: Props) {
   const [aiConfig, setAiConfig] = useState<AIConfig>(() => loadAIConfig() || { provider: 'openai', apiUrl: 'https://api.openai.com/v1/chat/completions', apiKey: '', model: 'gpt-4o-mini' });
   const [saved, setSaved] = useState(false);
-  const [nickname, setNickname] = useState(() => localStorage.getItem('skct-nickname') || '');
 
   const handleProviderChange = (provider: string) => {
     const defaults = getProviderDefaults(provider);
@@ -23,8 +26,8 @@ export default function Settings({ onBack, onClearStats, onClearWrongNotes, onNa
 
   const handleSave = () => {
     saveAIConfig(aiConfig);
-    localStorage.setItem('skct-nickname', nickname);
     setSaved(true);
+    onSaveSettings();
     setTimeout(() => setSaved(false), 2000);
   };
 
@@ -33,6 +36,22 @@ export default function Settings({ onBack, onClearStats, onClearWrongNotes, onNa
       <div className="pt-4 pb-4 flex items-center gap-3">
         <button onClick={onBack} className="text-text-dim">&larr;</button>
         <h2 className="text-xl font-bold">설정</h2>
+      </div>
+
+      {/* User Info */}
+      <div className="bg-bg-card rounded-2xl p-4 mb-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-medium">프로필</h3>
+            <p className="text-sm mt-1">{userName} <span className="text-text-dim">({userClassName})</span></p>
+          </div>
+          <button
+            onClick={onLogout}
+            className="px-3 py-1.5 bg-wrong/10 text-wrong rounded-lg text-xs font-medium"
+          >
+            로그아웃
+          </button>
+        </div>
       </div>
 
       {/* Theme */}
@@ -51,17 +70,6 @@ export default function Settings({ onBack, onClearStats, onClearWrongNotes, onNa
             </div>
           </button>
         </div>
-      </div>
-
-      {/* Nickname */}
-      <div className="bg-bg-card rounded-2xl p-4 mb-4">
-        <h3 className="text-sm font-medium mb-3">프로필</h3>
-        <input
-          value={nickname}
-          onChange={e => setNickname(e.target.value)}
-          placeholder="닉네임"
-          className="w-full bg-bg border border-bg-hover/50 rounded-lg px-3 py-2 text-sm"
-        />
       </div>
 
       {/* AI Config */}
@@ -101,7 +109,7 @@ export default function Settings({ onBack, onClearStats, onClearWrongNotes, onNa
               value={aiConfig.apiKey}
               onChange={e => setAiConfig(prev => ({ ...prev, apiKey: e.target.value }))}
               className="w-full bg-bg border border-bg-hover/50 rounded-lg px-3 py-2 text-xs font-mono"
-              placeholder="sk-..."
+              placeholder="API Key 입력"
             />
           </div>
 

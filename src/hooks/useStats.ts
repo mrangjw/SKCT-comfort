@@ -16,10 +16,16 @@ function save(data: Record<Section, SectionStats>) {
 }
 
 export function useStats() {
-  const [stats, setStats] = useState<Record<string, SectionStats>>(load);
+  const [stats, setStatsState] = useState<Record<string, SectionStats>>(load);
+
+  const setStats = useCallback((data: Record<string, unknown>) => {
+    const parsed = data as Record<string, SectionStats>;
+    setStatsState(parsed);
+    save(parsed as Record<Section, SectionStats>);
+  }, []);
 
   const record = useCallback((section: Section, type: string, results: QuizResult[]) => {
-    setStats(prev => {
+    setStatsState(prev => {
       const s = prev[section] || { section, total: 0, correct: 0, byType: {}, history: [] };
       const correct = results.filter(r => r.correct).length;
       const total = results.length;
@@ -41,8 +47,8 @@ export function useStats() {
 
   const clearAll = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
-    setStats({});
+    setStatsState({});
   }, []);
 
-  return { stats, record, clearAll };
+  return { stats, record, clearAll, setStats };
 }

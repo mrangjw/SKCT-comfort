@@ -21,7 +21,7 @@ interface UsageData {
   recentSessions: { date: string; count: number }[];
 }
 
-export default function Admin({ onBack }: Props) {
+export default function Admin({ onBack, onNavigateFeedback }: Props) {
   const [password, setPassword] = useState('');
   const [authenticated, setAuthenticated] = useState(false);
   const [users, setUsers] = useState<UserData[]>([]);
@@ -90,6 +90,16 @@ export default function Admin({ onBack }: Props) {
         <button onClick={onBack} className="text-text-dim">&larr;</button>
         <h2 className="text-xl font-bold">관리자 대시보드</h2>
       </div>
+
+      {/* Feedback Management — 최상단 */}
+      {onNavigateFeedback && (
+        <button
+          onClick={onNavigateFeedback}
+          className="w-full py-3 bg-primary-light text-white rounded-xl text-sm font-medium mb-4"
+        >
+          문의 관리
+        </button>
+      )}
 
       {/* Summary */}
       {usage && (
