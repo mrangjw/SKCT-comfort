@@ -11,12 +11,14 @@ Parameters:
 Globals:
   Function:
     Runtime: python3.12
-    Timeout: 30
-    MemorySize: 256
+    Timeout: 60
+    MemorySize: 512
     Environment:
       Variables:
         TABLE_NAME: !Ref SKCTTable
         ADMIN_PASSWORD: !Ref AdminPassword
+        RAG_BUCKET: !Ref RAGBucket
+        RAG_KEY: rag/chunks.json
   Api:
     Cors:
       AllowMethods: "'GET,POST,OPTIONS'"
@@ -53,6 +55,11 @@ Resources:
           Projection:
             ProjectionType: ALL
 
+  RAGBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'skct-comfort-rag-${AWS::AccountId}'
+
   ApiFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -61,7 +68,24 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref SKCTTable
+        - S3ReadPolicy:
+            BucketName: !Ref RAGBucket
       Events:
+        AuthLogin:
+          Type: Api
+          Properties:
+            Path: /api/auth/login
+            Method: post
+        UserDataGet:
+          Type: Api
+          Properties:
+            Path: /api/user-data
+            Method: get
+        UserDataPost:
+          Type: Api
+          Properties:
+            Path: /api/user-data
+            Method: post
         StatsPost:
           Type: Api
           Properties:
@@ -116,6 +140,16 @@ Resources:
           Type: Api
           Properties:
             Path: /api/admin/usage
+            Method: get
+        RagSearch:
+          Type: Api
+          Properties:
+            Path: /api/rag/search
+            Method: post
+        RagStatus:
+          Type: Api
+          Properties:
+            Path: /api/rag/status
             Method: get
 
 Outputs:
